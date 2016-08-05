@@ -16,11 +16,11 @@ class Collection implements \IteratorAggregate, CollectionInterface
 
     public function conf(array $conf)
     {
-        foreach ($conf as $routeName => $item) {
+        foreach ($conf as $item) {
 
-            $scheme = isset($item[0]) ? $item[0] : '';
-            $controller = isset($item[1]) ? $item[1] : '';
-            $routeName = isset($item[2]) ? $item[2] : '';
+            $scheme = isset($item['scheme']) ? $item['scheme'] : '';
+            $controller = isset($item['controller']) ? $item['controller'] : '';
+            $routeName = isset($item['index']) ? $item['index'] : '';
             
             $route = new Route($scheme, $controller, $routeName);
             $this->add($route);
