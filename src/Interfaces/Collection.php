@@ -8,7 +8,7 @@ interface Collection
 {
     public function all();
 
-    public function conf(array $conf);
+    public function conf(array $data);
     
     public function add(addRoute $route);
 

@@ -14,19 +14,34 @@ class Collection implements \IteratorAggregate, CollectionInterface
         return new \ArrayIterator($this->routes);
     }
 
-    public function conf(array $conf)
+    public function conf(array $data, array $conf = array())
     {
-        foreach ($conf as $item) {
+        foreach ($data as $item) {
 
             $scheme = isset($item['scheme']) ? $item['scheme'] : '';
             $controller = isset($item['controller']) ? $item['controller'] : '';
             $routeName = isset($item['index']) ? $item['index'] : '';
-            
-            $route = new Route($scheme, $controller, $routeName);
+            $suffix = isset($item['suffix']) ? $item['suffix'] : isset($conf['suffix']) ? $conf['suffix'] : '';
+
+            if (!$scheme) {
+                
+                throw new RouteException('not found scheme in config file');
+            }
+
+            if (!$controller) {
+                
+                throw new RouteException('not found controller in config file');
+            }
+
+            $route = new Route($scheme, $controller, $routeName, $suffix);
+
+//            $route->setMVC($m, $v, $c);
+            $route->setSuffix($suffix);
+
             $this->add($route);
         }
     }
-
+    
     public function add(Route $route)
     {
         unset($this->routes[$route->routeName]);
@@ -50,6 +65,8 @@ class Collection implements \IteratorAggregate, CollectionInterface
 
             if (!preg_match($routePathRegexp, $pathInfo, $matches)) {
                 continue;
+            } else {
+                $compiled->setRegMatch($matches);
             }
 
             // check HTTP method requirement

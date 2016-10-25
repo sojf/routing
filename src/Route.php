@@ -32,6 +32,21 @@ class Route extends Compiler implements RouteInterface
         $this->setRouteName($name);
     }
 
+    public function setMVC($m, $v, $c)
+    {
+        if ($m) {
+            $this->setModelNameSpace($m);
+        }
+
+        if ($v) {
+            $this->setViewNameSpace($v);
+        }
+
+        if ($c) {
+            $this->setControllerNameSpace($c);
+        }
+    }
+
     public function setRouteName($routeName = '')
     {
         if (!is_string($routeName)) {
@@ -63,15 +78,15 @@ class Route extends Compiler implements RouteInterface
         return $this;
     }
 
-    public function setController($controller)
+    public function setController($controllerClass)
     {
-        if ($controller && !is_string($controller)) {
+        if ($controllerClass && !is_string($controllerClass)) {
 
-            // todo: Really need another type ? E.g. closure, object
-            throw new RouteException('Controller cannot be [' . gettype($controller) . '] , need string type.');
+            // todo: really need another type ? e.g. closure, object
+            throw new RouteException('Controller cannot be [' . gettype($controllerClass) . '] , need string type.');
         }
 
-        $this->controller = str_replace('/', '\\', trim($controller));
+        $this->controllerClass = str_replace('/', '\\', trim($controllerClass));
 
         return $this;
     }
@@ -110,5 +125,18 @@ class Route extends Compiler implements RouteInterface
 
         $this->requestMethods = is_string($requestMethods) ? array($requestMethods) : $requestMethods;
         return $this;
+    }
+
+    protected function getSuffix()
+    {
+        return $this->suffix;
+    }
+
+    /**
+     * @param mixed $suffix
+     */
+    public function setSuffix($suffix)
+    {
+        $this->suffix = $suffix;
     }
 }

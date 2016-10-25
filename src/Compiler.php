@@ -8,23 +8,30 @@ use Sojf\Routing\Interfaces\Compiled as CompiledInterface;
 
 class Compiler implements CompilerInterface
 {
+    public $suffix;
+
     public $routePath;
 
     public $requestMethods;
 
-    public $controller;
+    public $controllerClass;
 
-    protected $compiled;
+    protected $compiledClass;
+
+    /**
+     * @var Compiled $compiled
+     */
+    protected $compiledObj;
 
     protected $compilerLock = false;
 
-    public $modelNameSpace = 'Src\\Model';
-    public $viewNameSpace = 'Src\\View';
-    public $controllerNameSpace = 'Src\\Controller';
+    public $modelNameSpace = 'App\\Model';
+    public $viewNameSpace = 'App\\View';
+    public $controllerNameSpace = 'App\\Controller';
     
-    const REGEX_DELIMITER = '#';
+    const REGEX_DELIMITER = '~';
     const CONTROLLER_DELIMITER = '@';
-    
+
     public function setModelNameSpace($modelNameSpace)
     {
         $this->modelNameSpace = $modelNameSpace;
@@ -40,22 +47,22 @@ class Compiler implements CompilerInterface
         $this->controllerNameSpace = $controllerNameSpace;
     }
     
-    public function prepare($compiled)
+    public function prepare($compiledClass)
     {
-        if (!is_string($compiled)) {
+        if (!is_string($compiledClass)) {
 
-            throw new RouteException('compiled must be string.');
+            throw new RouteException('compiledClass must be string.');
         }
 
-        if (!class_exists($compiled)) {
+        if (!class_exists($compiledClass)) {
 
-            throw new RouteException('compiled must be class.');
+            throw new RouteException('compiledClass must be class.');
         }
 
         $interface = CompiledInterface::class;
-        if (!in_array($interface, class_implements($compiled))) {
+        if (!in_array($interface, class_implements($compiledClass))) {
 
-            throw new RouteException("compiled must implement: $interface");
+            throw new RouteException("compiledClass must implement: $interface");
         }
 
         if (!$this->routePath) {
@@ -66,14 +73,14 @@ class Compiler implements CompilerInterface
 
             throw new RouteException('Route compiler need set requestMethods.');
 
-        } elseif (!$this->controller) {
+        } elseif (!$this->controllerClass) {
 
-            throw new RouteException('Route compiler need set controller.');
+            throw new RouteException('Route compiler need set controllerClass.');
         }
 
         if (!$this->lock()) {
 
-            $this->compiled = $compiled;
+            $this->compiledClass = $compiledClass;
         }
 
         return $this;
@@ -88,37 +95,133 @@ class Compiler implements CompilerInterface
     {
         if ($this->lock()) {
 
-            return $this->compiled;
+            return $this->compiledObj;
         }
 
-        if (!$this->compiled) {
+        if (!$this->compiledClass) {
 
-            throw new RouteException('Route compile need call prepare method first.');
+            throw new RouteException('Route compile need call prepare method set Compiled class to save data.');
         }
 
-        /** @var Compiled $compiled */
-        $compiled = new $this->compiled();
+        $this->compiledObj = new $this->compiledClass();
 
-        $this->requestMethods($compiled)->routePath($compiled)
-            ->controller($compiled)->MV($compiled);
+        $this->requestMethods()->routePath()
+            ->controller()->MV();
 
         $this->compilerLock = true;
 
-        $this->compiled = $compiled;
-
-        return $compiled;
+        return $this->compiledObj;
     }
 
-    protected function routePath(Compiled $compiled)
+    /**
+     * 正则注释处理
+     * @param $comment string 正则注释
+     * @return string array key
+     */
+    protected function regCommentParser($comment)
+    {
+        $symbol = mb_substr($comment, 0, 1);
+        switch ($symbol) {
+            case '=':
+                return mb_substr($comment, 1);
+                break;
+
+            case '@': // 控制器占位符
+                return '__ctl__';
+                break;
+
+            default:
+                throw new RouteException('Error reg comment parser');
+        }
+    }
+
+    /**
+     * 路由正则处理
+     * @param $varStr string 路由正则
+     * @return mixed|string
+     */
+    protected function routeRegParser($varStr)
+    {
+        $reg = trim($varStr, '`'); // 去掉`
+        $replacePattern = '/\(\?\#.*\)/'; // 去掉正则注释
+        $reg = preg_replace($replacePattern, '', $reg);
+
+        return $reg ? $reg : '\w+'; // 没有写路由正则，使用默认正则
+    }
+
+    /**
+     * core: 更新
+     * @return $this
+     */
+    protected function routePath()
     {
         $routePath = $this->routePath;
 
+        if (mb_strlen($routePath) === 1 && mb_strpos($routePath, '/') === 0) {
+            // 根路由不处理
+            $pattern = $routePath;
+
+        } else {
+
+            $regPattern = '/\`.+`/Ui'; // 提取路由正则
+            $commentsPattern = '/\(\?\#(?<comment>.*)\)/Ui'; // 提取正则注释
+
+            preg_match_all($regPattern, $routePath, $regs, PREG_SET_ORDER);
+
+            $search = array();
+            $replace = array();
+            foreach ($regs as $item) {
+
+                $reg = $item[0];
+                preg_match($commentsPattern, $reg, $res);
+
+                if ($res && $arrayKey = $this->regCommentParser($res['comment'])) {
+
+                    $search[] = $reg;
+                    $routePattern = $this->routeRegParser($reg);
+                    $replace[] = '('. '?<' . $arrayKey . '>' . $routePattern . ')';
+                }
+            }
+
+            $pattern = $search ? str_replace($search, $replace, $routePath) : $routePath;
+
+            if ($this->suffix) {
+                $suffix = $this->suffix();
+                $pattern .= $suffix;
+            }
+        }
+
+        $pattern = self::REGEX_DELIMITER . '^' . $pattern . '$' . self::REGEX_DELIMITER . 'i';
+        $this->compiledObj->setRoutePathRegexp($pattern)->setRoutePath($this->routePath);
+        return $this;
+    }
+
+    protected function suffix()
+    {
+        $suffix = $this->suffix;
+        $suffix = explode('|', $suffix);
+
+        $suffix = join('|\.', $suffix);
+        $suffix = '(\.' . $suffix . ')?';
+
+        return $suffix;
+    }
+
+    /**
+     * core: 旧版
+     * @return $this
+     */
+    protected function routePath1()
+    {
+        $routePath = $this->routePath;
+
+        // 提取路由字串，获取路由正则
         preg_match_all("#(?P<search>{(?P<reg>.+)?(?:\((?P<var>\w+)\))?})#U", $routePath, $matchRoutePathVar, PREG_SET_ORDER);
 
         $arguments = array();
-
         $routeArg = explode('/', $routePath);
 
+        // 路由正则解析
         foreach ($matchRoutePathVar as $index => $item) {
 
             $var = isset($item['var']) ? $item['var'] : '';
@@ -132,93 +235,101 @@ class Compiler implements CompilerInterface
             }
 
             array_walk($routeArg, function (&$value, $key) use($search, $var, $reg, &$arguments) {
-                
+
                 if ($search == $value) {
 
                     if (boolval($var)) {
 
+                        // 记录捕获变量在pathInfo中位置
                         $arguments[$key] = $var;
                     }
 
+                    // 替换捕获变量为正确正则
                     $value = $reg;
                 }
             });
         }
 
-        $methodIndex = null;
-        array_walk($routeArg, function (&$value, $key) use (&$methodIndex) {
+        // 动态方法位置解析
+        $dynamicMethodIndex = null;
+        array_walk($routeArg, function (&$value, $key) use (&$dynamicMethodIndex) {
 
             if ($value === self::CONTROLLER_DELIMITER) {
 
                 $value = '[a-zA-Z]+';
-                $methodIndex = $key;
+                $dynamicMethodIndex = $key;
             }
         });
 
         $routePath = join('/', $routeArg);
 
         if (mb_strlen($routePath) === 1 && mb_strpos($routePath, '/') === 0) {
-
+            // 根路由处理
             $regexp = self::REGEX_DELIMITER . '^' . $routePath . '$' .self::REGEX_DELIMITER . 's';
-        } else {
 
+        } else {
+            // core: 路由匹配正则
+            //$regexp = self::REGEX_DELIMITER . '(^' . $routePath . '$)' .self::REGEX_DELIMITER . 's';
             $regexp = self::REGEX_DELIMITER . '(^' . $routePath . '/\w+|^' . $routePath . '$)' .self::REGEX_DELIMITER . 's';
         }
 
-        $compiled->setRoutePathRegexp($regexp)->setRoutePath($this->routePath)->setArguments($arguments)->setMethodIndex($methodIndex);
-        
+        $this->compiledObj->setRoutePathRegexp($regexp)->setRoutePath($this->routePath)->setArguments($arguments)->setDynamicMethodIndex($dynamicMethodIndex);
         return $this;
     }
 
-    protected function requestMethods(Compiled $compiled)
+    /**
+     * core: 维护
+     * @return $this
+     */
+    protected function controller()
     {
-        $compiled->setRequestMethods($this->requestMethods);
-        return $this;
-    }
-
-    protected function controller(Compiled $compiled)
-    {
-        $controller = $this->controller;
         $method = '';
+        $controllerClass = $this->controllerClass;
+        $nameSpace = trim($this->controllerNameSpace, '\/');
 
-        if (mb_strpos($controller, self::CONTROLLER_DELIMITER) !== false) {
+        if (mb_strpos($controllerClass, self::CONTROLLER_DELIMITER) !== false) {
 
-            list($controller, $method) = explode(self::CONTROLLER_DELIMITER, $controller, 2);
+            // 提取控制器字串中的方法
+            list($controllerClass, $method) = explode(self::CONTROLLER_DELIMITER, $controllerClass, 2);
         }
 
-        $nameSpace = trim($this->controllerNameSpace, '\/');
-        $controller = $nameSpace . '\\' . str_replace('/', '\\', $controller);
-        
-        if (!class_exists($controller)) {
+        $controllerClass = $nameSpace . '\\' . str_replace('/', '\\', $controllerClass);
 
-            throw new RouteException("Controller: [{$controller}] not found");
+        if (!class_exists($controllerClass)) {
+
+            throw new RouteException("Controller: {$controllerClass} Not found");
         }
 
         if ($method) {
 
-            $reflector = new \ReflectionClass($controller);
+            $reflector = new \ReflectionClass($controllerClass);
             if (!$reflector->hasMethod($method)) {
 
-                throw new RouteException("Error Method: {$controller}@{$method} not found");
+                throw new RouteException("Error Method: {$controllerClass}@{$method} not found");
             }
         }
 
-        $compiled->setControllerMethod($method)->setController($controller);
-
+        $this->compiledObj->setControllerMethod($method)->setControllerClass($controllerClass);
         return $this;
     }
 
-    protected function MV(Compiled $compiled)
+    protected function MV()
     {
-        $controller = str_replace('/', '\\', $this->controller);
+        $controller = str_replace('/', '\\', $this->controllerClass);
 
         $model = $this->modelNameSpace;
         $modelNameSpace = $model . '\\' . $controller;
-        
+
         $view = $this->viewNameSpace;
         $viewNameSpace = $view . '\\' . $controller;
-        
-        $compiled->setModelNameSpace($modelNameSpace)->setViewNameSpace($viewNameSpace);
+
+        $this->compiledObj->setModelNameSpace($modelNameSpace)->setViewNameSpace($viewNameSpace);
+        return $this;
+    }
+
+    protected function requestMethods()
+    {
+        $this->compiledObj->setRequestMethods($this->requestMethods);
         return $this;
     }
 }

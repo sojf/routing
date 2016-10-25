@@ -10,8 +10,8 @@ interface Compiled
     public function getModelNameSpace();
     public function setModelNameSpace($ModelNameSpace);
     
-    public function getMethodIndex();
-    public function setMethodIndex($methodIndex);
+    public function getDynamicMethodIndex();
+    public function setDynamicMethodIndex($dynamicMethodIndex);
     
     public function getRoutePath();
     public function setRoutePath($routePath);
@@ -28,6 +28,9 @@ interface Compiled
     public function getControllerMethod();
     public function setControllerMethod($controllerMethod);
 
-    public function getController();
-    public function setController($controller);
+    public function getControllerClass();
+    public function setControllerClass($controller);
+
+    public function getRegMatch();
+    public function setRegMatch(array $regMatch);
 }

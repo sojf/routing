@@ -8,5 +8,5 @@ interface Route
 
     public function setScheme($scheme);
     
-    public function setController($controller);
+    public function setController($controllerClass);
 }

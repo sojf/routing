@@ -12,9 +12,10 @@ class Compiled implements CompiledInterface
     protected $requestMethods;
     protected $controllerMethod;
     protected $controller;
-    protected $methodIndex;
+    protected $dynamicMethodIndex;
     protected $viewNameSpace;
     protected $ModelNameSpace;
+    protected $regMatch = array();
 
     public function getViewNameSpace()
     {
@@ -38,14 +39,14 @@ class Compiled implements CompiledInterface
         return $this;
     }
 
-    public function getMethodIndex()
+    public function getDynamicMethodIndex()
     {
-        return $this->methodIndex;
+        return $this->dynamicMethodIndex;
     }
 
-    public function setMethodIndex($methodIndex)
+    public function setDynamicMethodIndex($dynamicMethodIndex)
     {
-        $this->methodIndex = $methodIndex;
+        $this->dynamicMethodIndex = $dynamicMethodIndex;
         return $this;
     }
 
@@ -104,14 +105,30 @@ class Compiled implements CompiledInterface
         return $this;
     }
 
-    public function getController()
+    public function getControllerClass()
     {
         return $this->controller;
     }
 
-    public function setController($controller)
+    public function setControllerClass($controller)
     {
         $this->controller = $controller;
         return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRegMatch()
+    {
+        return $this->regMatch;
+    }
+
+    /**
+     * @param mixed $regMatch
+     */
+    public function setRegMatch(array $regMatch)
+    {
+        $this->regMatch = $regMatch;
     }
 }

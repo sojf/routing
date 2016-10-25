@@ -5,7 +5,7 @@ namespace Sojf\Routing\Interfaces;
 interface Compiler
 {
     public function compile();
-    public function prepare($compiled);
+    public function prepare($compiledClass);
     
     public function setModelNameSpace($modelNameSpace);
     public function setViewNameSpace($viewNameSpace);
