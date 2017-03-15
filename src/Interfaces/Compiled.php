@@ -2,35 +2,62 @@
 namespace Sojf\Routing\Interfaces;
 
 
+/**
+ * 路由编译结果接口
+ */
 interface Compiled
 {
-    public function getViewNameSpace();
+    // 设置应用名
+    public function getAppName();
+
+    // 获取应用名
+    public function setAppName($appName);
+
+    // 设置视图命名空间
     public function setViewNameSpace($viewNameSpace);
 
-    public function getModelNameSpace();
+    // 获取视图命名空间
+    public function getViewNameSpace();
+
+    // 设置模型命名空间
     public function setModelNameSpace($ModelNameSpace);
-    
-    public function getDynamicMethodIndex();
-    public function setDynamicMethodIndex($dynamicMethodIndex);
-    
-    public function getRoutePath();
+
+    // 获取模型命名空间
+    public function getModelNameSpace();
+
+    // 设置路由规则
     public function setRoutePath($routePath);
 
-    public function getRoutePathRegexp();
+    // 获取路由规则
+    public function getRoutePath();
+
+    // 设置路由类型
+    public function setRouteType($routeType);
+
+    // 获取路由类型
+    public function getRouteType();
+
+    // 设置路由正则
     public function setRoutePathRegexp($routePathRegexp);
 
-    public function getArguments();
-    public function setArguments($arguments);
+    // 过去路由正则
+    public function getRoutePathRegexp();
 
-    public function getRequestMethods();
-    public function setRequestMethods($requestMethods);
-
-    public function getControllerMethod();
+    // 设置控制器方法
     public function setControllerMethod($controllerMethod);
 
-    public function getControllerClass();
+    // 获取控制器方法
+    public function getControllerMethod();
+
+    // 设置控制器类
     public function setControllerClass($controller);
 
-    public function getRegMatch();
-    public function setRegMatch(array $regMatch);
+    // 获取控制器类
+    public function getControllerClass();
+
+    // 设置路由正则匹配结果（用于给控制器解析器获取匹配结果）
+    public function setMatchRes(array $regMatch);
+
+    // 路由路由正则匹配结果
+    public function getMatchRes();
 }

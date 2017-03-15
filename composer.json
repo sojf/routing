@@ -3,8 +3,7 @@
     "description": "Sojf Routing Component",
     "keywords": ["routing", "controller"],
     "require": {
-        "php": ">=5.5.9",
-        "sojf/config": "1.0.*"
+        "php": ">=5.5.9"
     },
     "support": {
       "issues": "https://github.com/sojf/routing/issues",
