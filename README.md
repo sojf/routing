@@ -130,6 +130,8 @@ web开发，离不开http协议，http协议抽象化后可得出2个概念: **�
 
 ### Route类
 
+构造函数：
+
 | **参数** | **默认值** | **说明** | **格式** |
 | ------------ | ------------ | ------------ | ------------ |
 | scheme | 空字符串 | 路由方案，用来指定路由类型和路由规则 | 用冒号分隔，不能有空格。`路由类型：路由规则`
@@ -139,18 +141,27 @@ web开发，离不开http协议，http协议抽象化后可得出2个概念: **�
 
 
 例子1: 
-```
- $route = new Sojf\Routing\Route('NORM:/user', 'UserController@detailsMethod', 'html|shtml', 'routeName');
+```php
+// 使用composer自动加载
+require 'vendor/autoload.php';
+
+// 创建路由信息对象
+$route = new Sojf\Routing\Route('NORM:/user', 'UserController@detailsMethod', 'html|shtml', 'routeName');
  ```
 
 例子2: 
-```
+```php
+// 使用composer自动加载
+require 'vendor/autoload.php';
+
+// 实例化路由信息对象
 $route = new Sojf\Routing\Route();
 
-$route->setScheme('NORM:/api-(?<token>\w*)');
-$route->setController('Blog@user');
-$route->setSuffix('html|shtml');
-$route->setRouteName('routeName');
+// 设置路由信息
+$route->setScheme('NORM:/api-(?<token>\w*)')
+      ->setController('Blog@user')
+      ->setSuffix('html|shtml')
+      ->setRouteName('routeName');
 ```
 
 ### Collection类
@@ -166,7 +177,10 @@ $route->setRouteName('routeName');
 | all | 无 | `array` | 返回所有路由对象 
 
 例子: 
-```
+```php
+// 使用composer自动加载
+require 'vendor/autoload.php';
+
 // 实例化路由编译器
 $compiler = new Sojf\Routing\Compiler();
 
@@ -222,8 +236,105 @@ foreach ($collection as $name => $route) {
  ```
 
 ### Compiler类
-路由编译器，主要生成路由匹配正则表达式。
-如果不适合，可自行替换掉路由编译器。
+Compiler类负责对路由信息进行处理，并输出处理结果，其最主要作用是生成路由匹配正则表达式。
+默认Compiler类实现了应用名，控制器，控制器方法，模型命名空间，视图命名控制等等功能编译，如果一时不懂，可以看源码即可。
+默认Compiler类的实现主要是用于自己框架。如不适合，可自行替换掉Compiler类。
+
+| **方法** | **参数** | **返回值** | **说明** |
+| ------------ | ------------ | ------------ | ------------ |
+| setRoute | `RouteInterface $route` | `$this` | 设置要编译的路由信息对象
+| setCompiled | `CompiledInterface $compiled` | `$this` | 设置编译结果存储对象
+| compile | 无 | `Compiled` 对象 | 编译路由信息，并返回编译结果对象
+| getCompiled | 无 | `Compiled` 对象| 获取编译结果对象
+| getRoute | 无 | `Route` 对象| 获取路由信息对象
+
+例子：
+```php
+// 使用composer自动加载
+require 'vendor/autoload.php';
+
+use Sojf\Routing\Route;
+use Sojf\Routing\Compiler;
+use Sojf\Routing\Compiled;
+
+// 设置路由
+$route = new Route('NORM:/api-(?<token>\w*)', 'Blog@user');
+
+$compiler = new Compiler(); // 实例化编译器
+$compiled = new Compiled(); // 实例化编译结果存储对象
+
+$result = $compiler
+    ->setRoute($route) // 设置要编译的路由
+    ->setCompiled($compiled) // 设置编译结果存储类
+    ->compile(); // 执行路由编译
+
+print_r($result);
+/*
+Sojf\Routing\Compiled Object
+(
+    [appName:protected] => blog
+    [routePath:protected] => /api-(?<token>\w*)
+    [routePathRegexp:protected] => ~^/api-(?<token>\w*)$~iu
+    [controllerMethod:protected] => user
+    [controller:protected] => app\Controller\Blog
+    [viewNameSpace:protected] => app\View
+    [modelNameSpace:protected] => app\Model
+    [routeType:protected] => NORM
+    [matchRes:protected] => Array
+        (
+        )
+
+    [hasCaptureVar] => 
+)
+*/
+
+// 获取路由匹配正则表达式
+$reg = $result->getRoutePathRegexp();
+
+// 假设这是当前请求路由
+$requestUlr = '/api-3bbe1210b';
+
+// 执行匹配
+preg_match($reg, $requestUlr, $matches);
+
+if ($matches) {
+    echo '路由配置成功, 接着执行其它逻辑', '<br>', PHP_EOL;
+    print_r($matches);
+    /*
+        Array
+        (
+            [0] => /api-3bbe1210b
+            [token] => 3bbe1210b
+            [1] => 3bbe1210b
+        )
+    */
+} else {
+    echo '路由匹配失败';
+}
+```
+---
 
 ### Compiled类
-路由编译结果存储类，主要用来保存编译结果，供后续逻辑使用。
+Compiled类，主要用来保存编译结果，供后续逻辑使用。
+默认Compiled类的实现主要是用于自己框架。如不适合，可自行替换掉Compiled类。
+
+| **方法** | **参数** | **返回值** | **说明** |
+| ------------ | ------------ | ------------ | ------------ |
+| setRouteType | `mixed $routeType` | 无 | 设置路由类型
+| getRouteType | 无 | `mixed` | 获取路由类型
+| setRoutePathRegexp | `mixed $routePathRegexp` | 无 | 设置路由正则
+| getRoutePathRegexp | 无 | `mixed` | 获取路由正则
+| setRoutePath | `mixed $routePath` | 无 | 设置路由规则
+| getRoutePath | 无 | `mixed` | 获取路由规则
+| setControllerClass | `mixed $controller` | 无 | 设置控制器类
+| getControllerClass | 无 | `mixed` | 获取控制器类
+| setControllerMethod | `mixed $controllerMethod` | 无 | 设置控制器方法
+| getControllerMethod | 无 | `mixed` | 获取控制器方法
+| setAppName | `mixed $appName` | 无 | 设置应用名
+| getAppName | 无 | `mixed` | 获取应用名
+| setModelNameSpace | `mixed $modelNameSpace` | 无 | 设置模型命名空间
+| getModelNameSpace | 无 | `mixed` | 获取模型命名空间
+| setViewNameSpace | `mixed $viewNameSpace` | 无 | 设置视图命名空间
+| getViewNameSpace | 无 | `mixed` | 获取视图命名空间
+| setMatchRes | `array $matchRes` | 无 | 设置路由正则匹配结果，用于给控制器解析器获取匹配里面的捕获变量
+| getMatchRes | 无 | `mixed` | 获取路由正则匹配结果，用于给控制器解析器获取匹配里面的捕获变量

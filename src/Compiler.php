@@ -3,7 +3,7 @@ namespace Sojf\Routing;
 
 
 use Sojf\Routing\Exceptions\RouteException;
-use Sojf\Routing\Interfaces\Compiled;
+use Sojf\Routing\Interfaces\Compiled as CompiledInterface;
 use Sojf\Routing\Interfaces\Compiler as CompilerInterface;
 use Sojf\Routing\Interfaces\Route as RouteInterface;
 
@@ -19,7 +19,7 @@ class Compiler implements CompilerInterface
     protected $route;
 
     /**
-     * @var Compiled 编译结果存储对象
+     * @var CompiledInterface 编译结果存储对象
      */
     protected $compiled;
 
@@ -39,7 +39,7 @@ class Compiler implements CompilerInterface
 
     /**
      * 编译路由
-     * @return Compiled
+     * @return CompiledInterface
      */
     public function compile()
     {
@@ -62,7 +62,7 @@ class Compiler implements CompilerInterface
 
     /**
      * 编译完成
-     * @return Compiled
+     * @return CompiledInterface
      */
     protected function finish()
     {
@@ -313,10 +313,10 @@ class Compiler implements CompilerInterface
 
     /**
      * 设置编译结果对象
-     * @param Compiled $compiled
+     * @param CompiledInterface $compiled
      * @return $this
      */
-    public function setCompiled(Compiled $compiled)
+    public function setCompiled(CompiledInterface $compiled)
     {
         $this->compiled = $compiled;
         return $this;
@@ -324,10 +324,9 @@ class Compiler implements CompilerInterface
 
     /**
      * 获取编译结果对象
-     * @param $compiled
-     * @return Compiled
+     * @return CompiledInterface
      */
-    public function getCompiled($compiled)
+    public function getCompiled()
     {
         return $this->compiled;
     }

@@ -100,11 +100,13 @@ class Route implements RouteInterface
 
     /**
      * 设置URL后缀
-     * @param mixed $suffix
+     * @param $suffix
+     * @return $this
      */
     public function setSuffix($suffix)
     {
         $this->suffix = $suffix;
+        return $this;
     }
 
     /**
@@ -187,10 +189,12 @@ class Route implements RouteInterface
     /**
      * 设置路由类型
      * @param array $types
+     * @return $this
      */
     public function setTypes(array $types)
     {
         $this->types = $types;
+        return $this;
     }
 
     /**

@@ -15,7 +15,7 @@ interface Compiler
     public function setCompiled(Compiled $compiled);
 
     // 获取编译结果对象
-    public function getCompiled($compiled);
+    public function getCompiled();
 
     // 设置将要编译的路由信息对象
     public function setRoute(Route $route);
